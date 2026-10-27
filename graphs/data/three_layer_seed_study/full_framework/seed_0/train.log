@@ -1,0 +1,33 @@
+Matplotlib is building the font cache; this may take a moment.
+Using device: cpu
+Using p0 = 1.0
+MultiLayerPINN(
+  (layer): LayerNet(
+    (net): Sequential(
+      (0): Linear(in_features=21, out_features=64, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=64, out_features=64, bias=True)
+      (3): Tanh()
+      (4): Linear(in_features=64, out_features=64, bias=True)
+      (5): Tanh()
+      (6): Linear(in_features=64, out_features=64, bias=True)
+      (7): Tanh()
+      (8): Linear(in_features=64, out_features=3, bias=True)
+    )
+  )
+)
+Loading FEM solution for comparison...
+FEM solution not found. Training without FEM comparison.
+Loading hybrid supervision data (N=36000, E=[1.0, 10.0])...
+  Loaded cached FEM supervision: /Users/jade/Personal Projects/P-PINNs-for-Statis-Linear-Elastic-PDEs/three-layer-workflow/supervision_cache/fem_supervision_34741efd821c827a.pt (36000 points)
+Attached 36000 supervision points to training data.
+Starting SOAP Pretraining...
+Epoch 0: Total Loss: 9944.772461 | PDE: 313.794525 | BC_sides: 0.000432 | Free_top: 5.908966 | Free_bot: 8.696163 | Load: 3.349065 | Energy: 0.077530 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.710779 | ImpactInv: 0.000000 | LR: 1.00e-03 | Time: 2.3537s
+Epoch 100: Total Loss: 237.800949 | PDE: 0.345590 | BC_sides: 0.000705 | Free_top: 0.158556 | Free_bot: 0.088372 | Load: 0.166870 | Energy: -0.000494 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.005507 | ImpactInv: 0.000000 | LR: 3.00e-04 | Time: 134.3001s
+Epoch 200: Total Loss: 217.324585 | PDE: 0.098220 | BC_sides: 0.001455 | Free_top: 0.059278 | Free_bot: 0.053488 | Load: 0.143947 | Energy: -0.002276 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.001272 | ImpactInv: 0.000000 | LR: 9.00e-05 | Time: 159.8960s
+Epoch 300: Total Loss: 214.003647 | PDE: 0.062691 | BC_sides: 0.001507 | Free_top: 0.056170 | Free_bot: 0.045814 | Load: 0.138484 | Energy: -0.002471 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.000893 | ImpactInv: 0.000000 | LR: 2.70e-05 | Time: 142.7125s
+SOAP Pretraining Complete. Total Time: 581.12s
+Starting L-BFGS Fine-Tuning...
+Running 0 L-BFGS outer steps.
+Using fixed collocation set during L-BFGS for stability.
+Model saved to /Users/jade/Personal Projects/P-PINNs-for-Statis-Linear-Elastic-PDEs/graphs/data/three_layer_seed_study/full_framework/seed_0/pinn_model.pth

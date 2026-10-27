@@ -36,33 +36,25 @@ def slugify(value: str) -> str:
     return value.lower().replace(" ", "_").replace("-", "_")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--epochs", type=int, default=400)
-    parser.add_argument("--seed", type=int, default=20260430)
-    parser.add_argument("--n-cases", type=int, default=100)
-    parser.add_argument("--device", default=None)
-    parser.add_argument("--skip-train", action="store_true")
-    args = parser.parse_args()
-
-    runs_dir = DATA_DIR / "three_layer_volume_ablation_runs"
-    logs_dir = DATA_DIR / "three_layer_volume_ablation_logs"
-    out_csv = DATA_DIR / "three_layer_volume_ablation.csv"
-
+def build_base_env(epochs: int, seed: int, device: str | None) -> dict[str, str]:
     base = {
         "MPLCONFIGDIR": str(REPO_ROOT / ".mplconfig"),
         "PYTHONPYCACHEPREFIX": str(REPO_ROOT / ".pycache"),
         "PINN_WARM_START": "0",
-        "PINN_EPOCHS_ADAM": str(args.epochs),
+        "PINN_EPOCHS_ADAM": str(epochs),
         "PINN_EPOCHS_LBFGS": "0",
-        "PINN_SEED": str(args.seed),
+        "PINN_SEED": str(seed),
         "PINN_SUPERVISION_CACHE": "1",
         "PINN_REGEN_SUPERVISION": "0",
         "PINN_ADAPTIVE_RESAMPLE_EVERY": "0",
     }
-    if args.device:
-        base["PINN_DEVICE"] = args.device
+    if device:
+        base["PINN_DEVICE"] = device
+    return base
 
+
+def build_variants() -> list[tuple[str, dict[str, str]]]:
+    """Canonical three-layer recipe plus the reverse-ablation overrides."""
     full = {
         "PINN_E_COMPLIANCE_POWER": "0.95",
         "PINN_THICKNESS_COMPLIANCE_ALPHA": "3",
@@ -126,6 +118,24 @@ def main() -> None:
             ),
         ),
     ]
+    return variants
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--epochs", type=int, default=400)
+    parser.add_argument("--seed", type=int, default=20260430)
+    parser.add_argument("--n-cases", type=int, default=100)
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--skip-train", action="store_true")
+    args = parser.parse_args()
+
+    runs_dir = DATA_DIR / "three_layer_volume_ablation_runs"
+    logs_dir = DATA_DIR / "three_layer_volume_ablation_logs"
+    out_csv = DATA_DIR / "three_layer_volume_ablation.csv"
+
+    base = build_base_env(args.epochs, args.seed, args.device)
+    variants = build_variants()
 
     rows = []
     for name, overrides in variants:

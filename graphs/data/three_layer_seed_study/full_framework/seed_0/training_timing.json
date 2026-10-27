@@ -1,0 +1,9 @@
+{
+  "device": "cpu",
+  "epochs_soap": 400,
+  "epochs_lbfgs": 0,
+  "soap_training_seconds": 581.1223487854004,
+  "lbfgs_training_seconds": 0.0,
+  "total_training_seconds": 581.1223487854004,
+  "supervision_points": 36000
+}

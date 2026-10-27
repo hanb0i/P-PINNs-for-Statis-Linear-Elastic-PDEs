@@ -1,0 +1,30 @@
+Using device: cuda
+Using p0 = 1.0
+MultiLayerPINN(
+  (layer): LayerNet(
+    (net): Sequential(
+      (0): Linear(in_features=21, out_features=64, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=64, out_features=64, bias=True)
+      (3): Tanh()
+      (4): Linear(in_features=64, out_features=64, bias=True)
+      (5): Tanh()
+      (6): Linear(in_features=64, out_features=64, bias=True)
+      (7): Tanh()
+      (8): Linear(in_features=64, out_features=3, bias=True)
+    )
+  )
+)
+Loading FEM solution for comparison...
+FEM solution not found. Training without FEM comparison.
+Supervision data disabled or not configured; training physics-only.
+Starting SOAP Pretraining...
+Epoch 0: Total Loss: 155349.750000 | PDE: 5016.747070 | BC_sides: 0.000429 | Free_top: 1.879234 | Free_bot: 2.060537 | Load: 1.641054 | Energy: 0.655290 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 16.119925 | ImpactInv: 0.000000 | LR: 1.00e-03 | Time: 0.6680s
+Epoch 100: Total Loss: 164.512238 | PDE: 4.917214 | BC_sides: 0.000146 | Free_top: 0.250914 | Free_bot: 0.503337 | Load: 0.335726 | Energy: 0.009177 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.049278 | ImpactInv: 0.000000 | LR: 3.00e-04 | Time: 55.0619s
+Epoch 200: Total Loss: 28.919817 | PDE: 0.780413 | BC_sides: 0.000097 | Free_top: 0.177352 | Free_bot: 0.279759 | Load: 0.200347 | Energy: 0.004645 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.013942 | ImpactInv: 0.000000 | LR: 9.00e-05 | Time: 56.1538s
+Epoch 300: Total Loss: 16.734430 | PDE: 0.432772 | BC_sides: 0.000088 | Free_top: 0.170235 | Free_bot: 0.171013 | Load: 0.180335 | Energy: 0.003334 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.008695 | ImpactInv: 0.000000 | LR: 2.70e-05 | Time: 56.1824s
+SOAP Pretraining Complete. Total Time: 216.12s
+Starting L-BFGS Fine-Tuning...
+Running 0 L-BFGS outer steps.
+Using fixed collocation set during L-BFGS for stability.
+Model saved to /root/repo/graphs/data/three_layer_seed_study_gpu/__sparse_fem_supervision/seed_2/pinn_model.pth

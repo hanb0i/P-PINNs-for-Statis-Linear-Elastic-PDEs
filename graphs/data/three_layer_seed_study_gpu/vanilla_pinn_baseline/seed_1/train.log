@@ -1,0 +1,30 @@
+Using device: cuda
+Using p0 = 1.0
+MultiLayerPINN(
+  (layer): LayerNet(
+    (net): Sequential(
+      (0): Linear(in_features=21, out_features=64, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=64, out_features=64, bias=True)
+      (3): Tanh()
+      (4): Linear(in_features=64, out_features=64, bias=True)
+      (5): Tanh()
+      (6): Linear(in_features=64, out_features=64, bias=True)
+      (7): Tanh()
+      (8): Linear(in_features=64, out_features=3, bias=True)
+    )
+  )
+)
+Loading FEM solution for comparison...
+FEM solution not found. Training without FEM comparison.
+Supervision data disabled or not configured; training physics-only.
+Starting SOAP Pretraining...
+Epoch 0: Total Loss: 421867.062500 | PDE: 13709.649414 | BC_sides: 0.127322 | Free_top: 1640.953979 | Free_bot: 1733.875977 | Load: 1640.045776 | Energy: 23.676817 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 261.554962 | ImpactInv: 0.000000 | LR: 1.00e-03 | Time: 0.3156s
+Epoch 100: Total Loss: 551.346985 | PDE: 14.978940 | BC_sides: 0.016344 | Free_top: 8.505589 | Free_bot: 85.443413 | Load: 6.977571 | Energy: 2.087612 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 20.399740 | ImpactInv: 0.000000 | LR: 3.00e-04 | Time: 18.3408s
+Epoch 200: Total Loss: 131.556808 | PDE: 3.381945 | BC_sides: 0.011212 | Free_top: 1.729844 | Free_bot: 28.883099 | Load: 1.577962 | Energy: 1.224974 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 13.005375 | ImpactInv: 0.000000 | LR: 9.00e-05 | Time: 18.0809s
+Epoch 300: Total Loss: 71.428703 | PDE: 1.910989 | BC_sides: 0.009798 | Free_top: 1.044895 | Free_bot: 11.675673 | Load: 0.925699 | Energy: 0.887726 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 9.118072 | ImpactInv: 0.000000 | LR: 2.70e-05 | Time: 18.3847s
+SOAP Pretraining Complete. Total Time: 72.92s
+Starting L-BFGS Fine-Tuning...
+Running 0 L-BFGS outer steps.
+Using fixed collocation set during L-BFGS for stability.
+Model saved to /root/repo/graphs/data/three_layer_seed_study_gpu/vanilla_pinn_baseline/seed_1/pinn_model.pth

@@ -59,19 +59,24 @@ def check_one_layer_ablation() -> None:
 
 
 def check_three_layer_ablation() -> None:
+    """Recompute the multi-seed ablation table from the per-seed results."""
     rows = _csv_rows(DATA / "three_layer_paper_ablation.csv")
-    expected = {
-        "Full framework": (5.74, 10.81),
-        "Vanilla PINN baseline": (58.59, 277.37),
-        "- Compliance-aware scaling": (14.86, 19.00),
-        "- Layerwise PDE decomposition": (5.47, 9.63),
-        "- Interface continuity": (5.46, 9.57),
-        "- Sparse FEM supervision": (10.93, 16.12),
-    }
-    for variant, (mean, worst) in expected.items():
-        row = _row_by_variant(rows, variant)
-        _assert_close(f"three-layer ablation {variant} mean", float(row["mean_mae"]), mean)
-        _assert_close(f"three-layer ablation {variant} worst", float(row["worst_mae"]), worst)
+    runs: dict[str, list[dict]] = {}
+    for path in sorted((DATA / "three_layer_seed_study_gpu").glob("*/seed_*/result.json")):
+        result = _json(path)
+        runs.setdefault(result["variant"], []).append(result)
+    for row in rows:
+        variant = row["variant"]
+        rs = runs.get(variant)
+        if not rs or len(rs) != int(row["n_seeds"]):
+            raise AssertionError(f"{variant}: CSV lists {row['n_seeds']} seeds, found {len(rs or [])} results")
+        mean = [r["volume_mae_pct_mean"] for r in rs]
+        worst = [r["volume_mae_pct_worst"] for r in rs]
+        _assert_close(f"three-layer ablation {variant} mean", sum(mean) / len(mean), float(row["mean_volmae"]))
+        _assert_close(f"three-layer ablation {variant} worst", sum(worst) / len(worst), float(row["worst_volmae"]))
+        for r in rs:
+            if not (REPO_ROOT / r["checkpoint"]).exists():
+                raise AssertionError(f"Missing checkpoint: {r['checkpoint']}")
 
 
 def check_three_layer_final_supervised() -> None:
