@@ -1,0 +1,17 @@
+{
+  "arm": "control",
+  "train_seed": 0,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "start_checkpoint": "graphs/data/three_layer_seed_study_gpu/full_framework/seed_0/pinn_model.pth",
+  "eval": {
+    "20260430": {
+      "volume_mae_pct_mean": 2.7446597499999994,
+      "volume_mae_pct_worst": 4.656933
+    },
+    "20260501": {
+      "volume_mae_pct_mean": 2.8016696699999994,
+      "volume_mae_pct_worst": 4.273956
+    }
+  }
+}

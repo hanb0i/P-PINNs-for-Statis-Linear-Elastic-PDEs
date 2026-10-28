@@ -167,6 +167,31 @@ The current three-layer timing artifact records one-time training as 94.3 s
 (1.57 min), while the manuscript text says 4.5 min. Either cite a log for
 4.5 min or update the manuscript.
 
+## Interior-Supervision Test (Table 5 Checkpoint)
+
+The shipped Table 5 checkpoint (2.53% mean / 4.66% worst VolMAE) was fine-tuned
+on 64 random interior FEM cases, which the manuscript does not mention.
+`scripts/run_interior_finetune_study.py` tests whether that interior data
+explains the result. Each arm starts from the five corner-supervised 400-epoch
+checkpoints in `graphs/data/three_layer_seed_study_gpu/full_framework`, then adds
+1200 SOAP epochs and 100 L-BFGS steps. Each model is scored on two sets of 100
+random interior cases. Results are in `graphs/data/interior_finetune_study/`.
+
+| Arm | Eval seed 20260430 mean / worst | Eval seed 20260501 mean / worst |
+|---|---|---|
+| Stage 1 (400 epochs) | 6.02 +/- 0.58 / 7.49 | 6.11 +/- 0.55 / 7.61 |
+| Control (extra training, corner data only) | 2.91 +/- 0.35 / 4.71 | 2.95 +/- 0.37 / 4.72 |
+| Interior (extra training, 64 random interior cases) | 3.03 +/- 0.09 / 5.79 | 3.10 +/- 0.09 / 5.32 |
+
+Extra training alone reproduces the Table 5 range (mean 2.54-3.42, worst
+4.34-5.10 across seeds). Interior data does not improve the mean and worsens the
+worst case. The claim that an interior-supervised stage produces the ~2.5% result
+is not supported. Table 5 should be described as the output of a longer second
+stage, and Table 6 as a 400-epoch run.
+
+Re-run: `python scripts/run_interior_finetune_study.py --arms control interior --seeds 0 1 2 3 4`,
+then `--summarize`.
+
 ## Figures
 
 Regenerate scripted figures:
