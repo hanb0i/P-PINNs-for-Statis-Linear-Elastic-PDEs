@@ -1,0 +1,17 @@
+{
+  "variant": "Vanilla PINN baseline",
+  "train_seed": 2,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "start_checkpoint": "graphs/data/three_layer_seed_study_gpu/vanilla_pinn_baseline/seed_2/pinn_model.pth",
+  "eval": {
+    "20260430": {
+      "volume_mae_pct_mean": 7.01336918,
+      "volume_mae_pct_worst": 30.720082
+    },
+    "20260501": {
+      "volume_mae_pct_mean": 7.21387167,
+      "volume_mae_pct_worst": 20.152199
+    }
+  }
+}

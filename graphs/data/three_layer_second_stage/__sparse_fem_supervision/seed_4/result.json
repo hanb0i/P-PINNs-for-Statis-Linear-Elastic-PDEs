@@ -1,0 +1,17 @@
+{
+  "variant": "- Sparse FEM supervision",
+  "train_seed": 4,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "start_checkpoint": "graphs/data/three_layer_seed_study_gpu/__sparse_fem_supervision/seed_4/pinn_model.pth",
+  "eval": {
+    "20260430": {
+      "volume_mae_pct_mean": 6.796837859999999,
+      "volume_mae_pct_worst": 8.187587
+    },
+    "20260501": {
+      "volume_mae_pct_mean": 6.901293029999998,
+      "volume_mae_pct_worst": 8.170225
+    }
+  }
+}

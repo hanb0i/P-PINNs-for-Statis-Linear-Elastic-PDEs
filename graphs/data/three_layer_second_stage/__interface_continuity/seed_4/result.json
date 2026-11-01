@@ -1,0 +1,17 @@
+{
+  "variant": "- Interface continuity",
+  "train_seed": 4,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "start_checkpoint": "graphs/data/three_layer_seed_study_gpu/__interface_continuity/seed_4/pinn_model.pth",
+  "eval": {
+    "20260430": {
+      "volume_mae_pct_mean": 3.0012054200000007,
+      "volume_mae_pct_worst": 4.62464
+    },
+    "20260501": {
+      "volume_mae_pct_mean": 3.03399831,
+      "volume_mae_pct_worst": 4.572513
+    }
+  }
+}

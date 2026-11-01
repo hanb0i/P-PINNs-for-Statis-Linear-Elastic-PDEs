@@ -192,6 +192,29 @@ stage, and Table 6 as a 400-epoch run.
 Re-run: `python scripts/run_interior_finetune_study.py --arms control interior --seeds 0 1 2 3 4`,
 then `--summarize`.
 
+## Ablation at the Table 5 Budget
+
+`scripts/run_second_stage_ablation.py` warm starts each variant's 400-epoch
+seed-study checkpoint and trains 1200 SOAP epochs plus 100 L-BFGS steps with that
+variant's own recipe (5 seeds, two sets of 100 random interior cases). The Full
+framework row is the corner-only control arm of the interior-supervision test.
+Results are in `graphs/data/three_layer_second_stage/`.
+
+| Variant | 400-epoch mean / worst | Second-stage mean / worst (eval seed 20260430) |
+|---|---|---|
+| Full framework | 6.35 / 7.74 (10 seeds) | 2.91 +/- 0.35 / 4.71 |
+| - Compliance-aware scaling | 33.16 / 102.74 | 8.06 +/- 2.55 / 23.83 |
+| - Layerwise PDE decomposition | 5.60 / 7.19 | 2.48 +/- 0.27 / 4.08 |
+| - Interface continuity | 6.02 / 7.48 | 2.88 +/- 0.25 / 4.53 |
+| - Sparse FEM supervision | 8.04 / 9.12 | 6.84 +/- 0.61 / 8.08 |
+| Vanilla PINN baseline | 27.66 / 82.27 | 8.19 +/- 0.74 / 29.71 |
+
+Compliance-aware scaling and sparse FEM supervision matter at both budgets.
+Layerwise PDE decomposition and interface continuity do not: at the second-stage
+budget the variants without them are as accurate as the Full framework (without
+layerwise decomposition the mean is slightly lower), so the paper should not claim
+a measurable accuracy benefit for either. Run `--summarize` for both eval seeds.
+
 ## Figures
 
 Regenerate scripted figures:

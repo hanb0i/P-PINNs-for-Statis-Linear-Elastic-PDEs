@@ -1,0 +1,17 @@
+{
+  "variant": "- Compliance-aware scaling",
+  "train_seed": 1,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "start_checkpoint": "graphs/data/three_layer_seed_study_gpu/__compliance_aware_scaling/seed_1/pinn_model.pth",
+  "eval": {
+    "20260430": {
+      "volume_mae_pct_mean": 6.25598437,
+      "volume_mae_pct_worst": 14.126312
+    },
+    "20260501": {
+      "volume_mae_pct_mean": 6.62400662,
+      "volume_mae_pct_worst": 20.094232
+    }
+  }
+}
