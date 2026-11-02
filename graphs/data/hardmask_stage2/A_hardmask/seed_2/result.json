@@ -1,0 +1,32 @@
+{
+  "case": "A",
+  "stage": 2,
+  "train_seed": 2,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "git_hash": "unknown",
+  "start_checkpoint": "/root/p2inn/graphs/data/hardmask_study/A_hardmask/seed_2/pinn_model.pth",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 1.63819201,
+  "volume_mae_pct_worst": 3.180725,
+  "top_uz_mae_pct_mean": 3.1621473200000003,
+  "top_uz_mae_pct_worst": 7.853118,
+  "volume_relative_l2_pct_mean": 14.946024009999999,
+  "volume_relative_l2_pct_worst": 32.356721,
+  "train_seconds": 1538.7329320907593,
+  "wall_seconds": 1542.3271827697754,
+  "device": "cuda",
+  "case_env": {},
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0",
+    "PINN_HARD_BC_EPOCHS": "100000",
+    "PINN_LBFGS_KEEP_HARD_BC": "1"
+  },
+  "tag": "hardmask"
+}

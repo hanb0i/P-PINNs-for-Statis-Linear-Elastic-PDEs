@@ -1,0 +1,40 @@
+{
+  "case": "C_cccc",
+  "stage": 2,
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "git_hash": "unknown",
+  "start_checkpoint": "/root/p2inn/graphs/data/c_variants/stage1/C_cccc_n128/seed_0/pinn_model.pth",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 2.5192524300000003,
+  "volume_mae_pct_worst": 5.469687,
+  "top_uz_mae_pct_mean": 5.5594377,
+  "top_uz_mae_pct_worst": 13.624888,
+  "volume_relative_l2_pct_mean": 60.2843466,
+  "volume_relative_l2_pct_worst": 109.96158,
+  "train_seconds": 946.8697454929352,
+  "wall_seconds": 949.878974199295,
+  "device": "cuda",
+  "case_env": {
+    "PINN_DOMAIN": "L",
+    "PINN_PATCH_X_FRAC": "0.62,0.82",
+    "PINN_PATCH_Y_FRAC": "0.12,0.32",
+    "PINN_FEM_NE_X": "16",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8"
+  },
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0",
+    "PINN_HARD_BC_EPOCHS": "100000",
+    "PINN_LBFGS_KEEP_HARD_BC": "1",
+    "PINN_NEURONS": "128"
+  },
+  "tag": "n128"
+}

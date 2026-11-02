@@ -1,0 +1,33 @@
+{
+  "case": "B_ccrf",
+  "train_seed": 1,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "4ac710b",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 8.06466684,
+  "volume_mae_pct_worst": 9.180982,
+  "top_uz_mae_pct_mean": 18.314400799999998,
+  "top_uz_mae_pct_worst": 21.494267,
+  "volume_relative_l2_pct_mean": 87.24111270999998,
+  "volume_relative_l2_pct_worst": 92.180542,
+  "train_seconds": 234.0236737728119,
+  "wall_seconds": 235.5761890411377,
+  "device": "mps",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8",
+    "PINN_EDGE_BCS": "x1=roller_face,y1=roller_face"
+  },
+  "note": "Renamed from B_ccss: simply-supported edges were uz=0 on the whole side face (now 'roller_face')."
+}

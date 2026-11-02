@@ -1,0 +1,44 @@
+{
+  "sampling_protocol": "random_interior_parameter_generalization",
+  "calibration_json": null,
+  "model_path": "/root/p2inn/graphs/data/c_variants/stage1/C_cccc_wd/seed_1/pinn_model.pth",
+  "seed": 20260430,
+  "n_cases": 100,
+  "mesh": {
+    "ne_x": 16,
+    "ne_y": 16,
+    "ne_z": 8
+  },
+  "e_bounds": [
+    1.0,
+    10.0
+  ],
+  "t1_bounds": [
+    0.02,
+    0.1
+  ],
+  "t2_bounds": [
+    0.02,
+    0.1
+  ],
+  "t3_bounds": [
+    0.02,
+    0.1
+  ],
+  "top_uz_mae_pct_mean": 10.40476625,
+  "top_uz_mae_pct_std": 1.993385897271762,
+  "top_uz_mae_pct_worst": 15.904069,
+  "top_uz_relative_l2_pct_mean": 91.55555510999997,
+  "top_uz_relative_l2_pct_std": 4.291317965102272,
+  "top_uz_relative_l2_pct_worst": 112.19778,
+  "volume_mae_pct_mean": 3.84100692,
+  "volume_mae_pct_std": 0.7903088691286424,
+  "volume_mae_pct_worst": 5.648404,
+  "volume_relative_l2_pct_mean": 89.16129197000001,
+  "volume_relative_l2_pct_std": 2.7739158513665236,
+  "volume_relative_l2_pct_worst": 102.74685,
+  "avg_displacement_relative_error_pct_mean": 25.57745539,
+  "avg_displacement_relative_error_pct_worst": 57.123998,
+  "all_top_cases_below_5_pct": false,
+  "all_volume_cases_below_5_pct": false
+}

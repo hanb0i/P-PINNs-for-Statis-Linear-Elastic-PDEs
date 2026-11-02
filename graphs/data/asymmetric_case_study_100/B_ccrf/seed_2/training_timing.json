@@ -1,0 +1,9 @@
+{
+  "device": "mps",
+  "epochs_soap": 400,
+  "epochs_lbfgs": 0,
+  "soap_training_seconds": 233.7193341255188,
+  "lbfgs_training_seconds": 3.0994415283203125e-06,
+  "total_training_seconds": 233.71933722496033,
+  "supervision_points": 36000
+}

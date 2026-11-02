@@ -1,0 +1,32 @@
+Using device: mps
+Using p0 = 1.0
+MultiLayerPINN(
+  (layer): LayerNet(
+    (net): Sequential(
+      (0): Linear(in_features=21, out_features=64, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=64, out_features=64, bias=True)
+      (3): Tanh()
+      (4): Linear(in_features=64, out_features=64, bias=True)
+      (5): Tanh()
+      (6): Linear(in_features=64, out_features=64, bias=True)
+      (7): Tanh()
+      (8): Linear(in_features=64, out_features=3, bias=True)
+    )
+  )
+)
+Loading FEM solution for comparison...
+FEM solution not found. Training without FEM comparison.
+Loading hybrid supervision data (N=36000, E=[1.0, 10.0])...
+  Loaded cached FEM supervision: /Users/jade/Personal Projects/P-PINNs-for-Statis-Linear-Elastic-PDEs/three-layer-workflow/supervision_cache/fem_supervision_10eee1f27e356daa.pt (36000 points)
+Attached 36000 supervision points to training data.
+Starting SOAP Pretraining...
+Epoch 0: Total Loss: 152582.406250 | PDE: 4906.145020 | BC_sides: 0.715737 | Free_top: 0.901569 | Free_bot: 2.950363 | Load: 1.908040 | Energy: 0.970763 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 17.097473 | ImpactInv: 0.000000 | LR: 1.00e-03 | Time: 1.8766s
+Epoch 100: Total Loss: 336.990387 | PDE: 5.225358 | BC_sides: 0.023771 | Free_top: 0.086728 | Free_bot: 0.745079 | Load: 0.352304 | Energy: 0.011768 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.053063 | ImpactInv: 0.000000 | LR: 3.00e-04 | Time: 99.2267s
+Epoch 200: Total Loss: 161.252914 | PDE: 0.811301 | BC_sides: 0.011517 | Free_top: 0.115132 | Free_bot: 0.291460 | Load: 0.186548 | Energy: 0.004985 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.013921 | ImpactInv: 0.000000 | LR: 9.00e-05 | Time: 100.1171s
+Epoch 300: Total Loss: 136.608414 | PDE: 0.460514 | BC_sides: 0.008763 | Free_top: 0.132327 | Free_bot: 0.160986 | Load: 0.182750 | Energy: 0.003293 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.009233 | ImpactInv: 0.000000 | LR: 2.70e-05 | Time: 111.9099s
+SOAP Pretraining Complete. Total Time: 420.89s
+Starting L-BFGS Fine-Tuning...
+Running 0 L-BFGS outer steps.
+Using fixed collocation set during L-BFGS for stability.
+Model saved to /Users/jade/Personal Projects/P-PINNs-for-Statis-Linear-Elastic-PDEs/graphs/data/asymmetric_case_study_100/B_ccss/seed_2/pinn_model.pth

@@ -1,0 +1,39 @@
+{
+  "case": "B_ccss",
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "unknown",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 8.293957570000002,
+  "volume_mae_pct_worst": 9.071498,
+  "top_uz_mae_pct_mean": 18.80053812,
+  "top_uz_mae_pct_worst": 21.154058,
+  "volume_relative_l2_pct_mean": 85.37745509000003,
+  "volume_relative_l2_pct_worst": 89.333729,
+  "train_seconds": 265.43260860443115,
+  "wall_seconds": 270.0144476890564,
+  "device": "cuda",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8",
+    "PINN_EDGE_BCS": "x1=simply_supported,y1=simply_supported"
+  },
+  "extra_env": {
+    "PINN_THICKNESS_COMPLIANCE_ALPHA": "2",
+    "PINN_E_COMPLIANCE_POWER": "0.85",
+    "PINN_W_DATA": "1600",
+    "PINN_NEURONS": "128"
+  },
+  "tag": "combo"
+}

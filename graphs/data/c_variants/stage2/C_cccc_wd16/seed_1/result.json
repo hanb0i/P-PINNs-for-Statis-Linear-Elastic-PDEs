@@ -1,0 +1,41 @@
+{
+  "case": "C_cccc",
+  "stage": 2,
+  "train_seed": 1,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "git_hash": "unknown",
+  "start_checkpoint": "/root/p2inn/graphs/data/c_variants/stage1/C_cccc_wd16/seed_1/pinn_model.pth",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 1.56312544,
+  "volume_mae_pct_worst": 2.460962,
+  "top_uz_mae_pct_mean": 2.88270599,
+  "top_uz_mae_pct_worst": 4.339746,
+  "volume_relative_l2_pct_mean": 33.832593769999995,
+  "volume_relative_l2_pct_worst": 48.05966,
+  "train_seconds": 1666.8779969215393,
+  "wall_seconds": 1671.296438217163,
+  "device": "cuda",
+  "case_env": {
+    "PINN_DOMAIN": "L",
+    "PINN_PATCH_X_FRAC": "0.62,0.82",
+    "PINN_PATCH_Y_FRAC": "0.12,0.32",
+    "PINN_FEM_NE_X": "16",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8"
+  },
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0",
+    "PINN_HARD_BC_EPOCHS": "100000",
+    "PINN_LBFGS_KEEP_HARD_BC": "1",
+    "PINN_W_DATA": "6400",
+    "PINN_W_LOAD": "80"
+  },
+  "tag": "wd16"
+}

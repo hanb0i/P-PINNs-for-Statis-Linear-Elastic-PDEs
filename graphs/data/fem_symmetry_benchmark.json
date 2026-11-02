@@ -1,0 +1,28 @@
+{
+  "hardware": {
+    "machine": "arm64",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.9.6"
+  },
+  "n_cases": 20,
+  "results": [
+    {
+      "mesh_full": [
+        16,
+        16,
+        8
+      ],
+      "dofs_full": 7803,
+      "dofs_quarter": 2187,
+      "n_cases": 20,
+      "max_rel_err_quarter_vs_full": 4.1869602377842665e-13,
+      "max_rel_err_eighth_vs_full": 6.141893209673117e-13,
+      "t_full_s": 1.3627993814,
+      "t_quarter_s": 0.0942470146499999,
+      "t_eighth_s": 0.03970503960000007,
+      "speedup_quarter": 14.459867895667093,
+      "speedup_eighth": 34.323083294444004
+    }
+  ]
+}

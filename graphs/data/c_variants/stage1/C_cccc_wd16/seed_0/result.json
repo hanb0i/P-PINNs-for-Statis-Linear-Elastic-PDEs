@@ -1,0 +1,36 @@
+{
+  "case": "C_cccc",
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "unknown",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 2.9701792000000005,
+  "volume_mae_pct_worst": 5.057741,
+  "top_uz_mae_pct_mean": 7.85805545,
+  "top_uz_mae_pct_worst": 11.524886,
+  "volume_relative_l2_pct_mean": 68.64256809,
+  "volume_relative_l2_pct_worst": 82.481837,
+  "train_seconds": 479.22512793540955,
+  "wall_seconds": 491.2636661529541,
+  "device": "cuda",
+  "case_env": {
+    "PINN_DOMAIN": "L",
+    "PINN_PATCH_X_FRAC": "0.62,0.82",
+    "PINN_PATCH_Y_FRAC": "0.12,0.32",
+    "PINN_FEM_NE_X": "16",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8"
+  },
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0",
+    "PINN_W_DATA": "6400",
+    "PINN_W_LOAD": "80"
+  },
+  "tag": "wd16"
+}

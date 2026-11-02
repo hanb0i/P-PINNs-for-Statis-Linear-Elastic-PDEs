@@ -1,0 +1,31 @@
+{
+  "case": "B_cccc",
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "4ac710b",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 5.018505050000001,
+  "volume_mae_pct_worst": 6.246409,
+  "top_uz_mae_pct_mean": 10.823883480000001,
+  "top_uz_mae_pct_worst": 14.075224,
+  "volume_relative_l2_pct_mean": 74.19761256999999,
+  "volume_relative_l2_pct_worst": 84.510332,
+  "train_seconds": 227.66001224517822,
+  "wall_seconds": 333.67375016212463,
+  "device": "mps",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8"
+  }
+}

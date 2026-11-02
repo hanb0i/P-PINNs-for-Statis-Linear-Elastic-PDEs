@@ -1,0 +1,9 @@
+{
+  "device": "cuda",
+  "epochs_soap": 1200,
+  "epochs_lbfgs": 100,
+  "soap_training_seconds": 781.1609904766083,
+  "lbfgs_training_seconds": 165.7087550163269,
+  "total_training_seconds": 946.8697454929352,
+  "supervision_points": 31392
+}

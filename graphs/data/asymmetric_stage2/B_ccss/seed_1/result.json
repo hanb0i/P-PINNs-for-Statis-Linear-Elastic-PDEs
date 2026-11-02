@@ -1,0 +1,35 @@
+{
+  "case": "B_ccss",
+  "stage": 2,
+  "train_seed": 1,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "git_hash": "unknown",
+  "start_checkpoint": "/root/p2inn/graphs/data/asymmetric_case_study_100/B_ccss/seed_1/pinn_model.pth",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 7.262907380000001,
+  "volume_mae_pct_worst": 8.699334,
+  "top_uz_mae_pct_mean": 16.142163500000002,
+  "top_uz_mae_pct_worst": 20.42109,
+  "volume_relative_l2_pct_mean": 75.19088400000001,
+  "volume_relative_l2_pct_worst": 84.837814,
+  "train_seconds": 951.6690559387207,
+  "wall_seconds": 956.158878326416,
+  "device": "cuda",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8",
+    "PINN_EDGE_BCS": "x1=simply_supported,y1=simply_supported"
+  }
+}

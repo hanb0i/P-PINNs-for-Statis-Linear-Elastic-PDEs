@@ -1,0 +1,40 @@
+{
+  "case": "B_cccc",
+  "stage": 2,
+  "train_seed": 2,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 1200,
+  "lbfgs_steps": 100,
+  "git_hash": "unknown",
+  "start_checkpoint": "/root/p2inn/graphs/data/hardmask_study/B_cccc_hardmask/seed_2/pinn_model.pth",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 1.9944504899999997,
+  "volume_mae_pct_worst": 3.279683,
+  "top_uz_mae_pct_mean": 4.36681532,
+  "top_uz_mae_pct_worst": 7.974559,
+  "volume_relative_l2_pct_mean": 22.930891470000002,
+  "volume_relative_l2_pct_worst": 39.823664,
+  "train_seconds": 1550.116532087326,
+  "wall_seconds": 1554.073267698288,
+  "device": "cuda",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8"
+  },
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0",
+    "PINN_HARD_BC_EPOCHS": "100000",
+    "PINN_LBFGS_KEEP_HARD_BC": "1"
+  },
+  "tag": "hardmask"
+}

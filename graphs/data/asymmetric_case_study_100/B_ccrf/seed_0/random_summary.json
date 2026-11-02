@@ -1,0 +1,44 @@
+{
+  "sampling_protocol": "random_interior_parameter_generalization",
+  "calibration_json": null,
+  "model_path": "/Users/jade/Personal Projects/P-PINNs-for-Statis-Linear-Elastic-PDEs/graphs/data/asymmetric_case_study_100/B_ccss/seed_0/pinn_model.pth",
+  "seed": 20260430,
+  "n_cases": 100,
+  "mesh": {
+    "ne_x": 24,
+    "ne_y": 16,
+    "ne_z": 8
+  },
+  "e_bounds": [
+    1.0,
+    10.0
+  ],
+  "t1_bounds": [
+    0.02,
+    0.1
+  ],
+  "t2_bounds": [
+    0.02,
+    0.1
+  ],
+  "t3_bounds": [
+    0.02,
+    0.1
+  ],
+  "top_uz_mae_pct_mean": 18.595219900000004,
+  "top_uz_mae_pct_std": 1.243606892123331,
+  "top_uz_mae_pct_worst": 21.720626,
+  "top_uz_relative_l2_pct_mean": 88.00382031,
+  "top_uz_relative_l2_pct_std": 1.8852823428376437,
+  "top_uz_relative_l2_pct_worst": 92.462915,
+  "volume_mae_pct_mean": 8.19646782,
+  "volume_mae_pct_std": 0.48959181157471127,
+  "volume_mae_pct_worst": 9.292787,
+  "volume_relative_l2_pct_mean": 88.51835905999998,
+  "volume_relative_l2_pct_std": 1.8380757017992264,
+  "volume_relative_l2_pct_worst": 92.927446,
+  "avg_displacement_relative_error_pct_mean": 73.57632089999998,
+  "avg_displacement_relative_error_pct_worst": 85.414443,
+  "all_top_cases_below_5_pct": false,
+  "all_volume_cases_below_5_pct": false
+}

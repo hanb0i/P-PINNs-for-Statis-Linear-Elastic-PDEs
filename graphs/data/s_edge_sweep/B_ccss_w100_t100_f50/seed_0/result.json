@@ -1,0 +1,38 @@
+{
+  "case": "B_ccss",
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "unknown",
+  "eval_mesh": [
+    24,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 8.331495069999999,
+  "volume_mae_pct_worst": 9.460165,
+  "top_uz_mae_pct_mean": 18.920527869999997,
+  "top_uz_mae_pct_worst": 22.118733,
+  "volume_relative_l2_pct_mean": 88.23527355999998,
+  "volume_relative_l2_pct_worst": 92.644911,
+  "train_seconds": 342.9319064617157,
+  "wall_seconds": 353.7759437561035,
+  "device": "cuda",
+  "case_env": {
+    "PINN_LX": "1.5",
+    "PINN_LY": "1.0",
+    "PINN_PATCH_X_FRAC": "0.55,0.75",
+    "PINN_PATCH_Y_FRAC": "0.30,0.50",
+    "PINN_FEM_NE_X": "24",
+    "PINN_FEM_NE_Y": "16",
+    "PINN_FEM_NE_Z": "8",
+    "PINN_EDGE_BCS": "x1=simply_supported,y1=simply_supported"
+  },
+  "extra_env": {
+    "PINN_S_LINE_WEIGHT": "100",
+    "PINN_S_TRACTION_WEIGHT": "100",
+    "PINN_S_LINE_FRACTION": "0.5"
+  },
+  "tag": "w100_t100_f50"
+}

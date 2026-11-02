@@ -1,0 +1,23 @@
+{
+  "case": "A",
+  "train_seed": 1,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "4ac710b",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 5.735736509999999,
+  "volume_mae_pct_worst": 7.348597,
+  "top_uz_mae_pct_mean": 11.868969909999999,
+  "top_uz_mae_pct_worst": 16.142589,
+  "volume_relative_l2_pct_mean": 67.86254675999999,
+  "volume_relative_l2_pct_worst": 81.247662,
+  "train_seconds": 226.44066858291626,
+  "wall_seconds": 228.05360412597656,
+  "device": "mps",
+  "case_env": {}
+}

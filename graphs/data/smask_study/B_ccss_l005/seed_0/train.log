@@ -1,0 +1,34 @@
+/root/p2inn/three-layer-workflow/data.py:465: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  blob = torch.load(cache_path, map_location="cpu")
+Using device: cuda
+Using p0 = 1.0
+MultiLayerPINN(
+  (layer): LayerNet(
+    (net): Sequential(
+      (0): Linear(in_features=21, out_features=64, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=64, out_features=64, bias=True)
+      (3): Tanh()
+      (4): Linear(in_features=64, out_features=64, bias=True)
+      (5): Tanh()
+      (6): Linear(in_features=64, out_features=64, bias=True)
+      (7): Tanh()
+      (8): Linear(in_features=64, out_features=3, bias=True)
+    )
+  )
+)
+Loading FEM solution for comparison...
+FEM solution not found. Training without FEM comparison.
+Loading hybrid supervision data (N=36000, E=[1.0, 10.0])...
+  Loaded cached FEM supervision: /root/p2inn/three-layer-workflow/supervision_cache/fem_supervision_10eee1f27e356daa.pt (36000 points)
+Attached 36000 supervision points to training data.
+Starting SOAP Pretraining...
+Epoch 0: Total Loss: 422.407227 | PDE: 23.741001 | BC_sides: 0.090584 | Free_top: 0.455941 | Free_bot: 0.972435 | Load: 0.258361 | Energy: 0.011492 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.076065 | ImpactInv: 0.000000 | LR: 1.00e-03 | Time: 1.4246s
+Epoch 100: Total Loss: 129.309341 | PDE: 0.368125 | BC_sides: 0.304945 | Free_top: 0.137398 | Free_bot: 0.051075 | Load: 0.127748 | Energy: 0.001590 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.021022 | ImpactInv: 0.000000 | LR: 3.00e-04 | Time: 90.9409s
+Epoch 200: Total Loss: 121.391342 | PDE: 0.259008 | BC_sides: 0.277090 | Free_top: 0.140211 | Free_bot: 0.047746 | Load: 0.129488 | Energy: 0.001314 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.017505 | ImpactInv: 0.000000 | LR: 9.00e-05 | Time: 88.0516s
+Epoch 300: Total Loss: 120.071625 | PDE: 0.241879 | BC_sides: 0.271233 | Free_top: 0.137060 | Free_bot: 0.047431 | Load: 0.128909 | Energy: 0.001258 | ImpactC: 0.000000 | FricC: 0.000000 | FricS: 0.000000 | Interface: 0.017012 | ImpactInv: 0.000000 | LR: 2.70e-05 | Time: 91.8320s
+SOAP Pretraining Complete. Total Time: 357.99s
+Starting L-BFGS Fine-Tuning...
+Running 0 L-BFGS outer steps.
+Using fixed collocation set during L-BFGS for stability.
+Model saved to /root/p2inn/graphs/data/smask_study/B_ccss_l005/seed_0/pinn_model.pth

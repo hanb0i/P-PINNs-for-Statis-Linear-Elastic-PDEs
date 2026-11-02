@@ -1,0 +1,27 @@
+{
+  "case": "A",
+  "train_seed": 0,
+  "eval_seed": 20260430,
+  "n_cases": 100,
+  "epochs": 400,
+  "git_hash": "unknown",
+  "eval_mesh": [
+    16,
+    16,
+    8
+  ],
+  "volume_mae_pct_mean": 4.1682342299999995,
+  "volume_mae_pct_worst": 5.276059,
+  "top_uz_mae_pct_mean": 7.616712570000002,
+  "top_uz_mae_pct_worst": 12.904775,
+  "volume_relative_l2_pct_mean": 38.569753629999994,
+  "volume_relative_l2_pct_worst": 53.731912,
+  "train_seconds": 278.0586256980896,
+  "wall_seconds": 287.52063751220703,
+  "device": "cuda",
+  "case_env": {},
+  "extra_env": {
+    "PINN_FORCE_SOFT_SIDE_BC": "0"
+  },
+  "tag": "hardmask"
+}
