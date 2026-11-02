@@ -217,6 +217,12 @@ def fem_cfg(case: ThreeLayerCase, ne_x: int, ne_y: int, ne_z: int) -> dict:
             "y_start": config.LOAD_PATCH_Y[0] / config.Ly,
             "y_end": config.LOAD_PATCH_Y[1] / config.Ly,
         },
+        "boundary": dict(getattr(config, "EDGE_BCS", {})),
+        **(
+            {"domain": {"type": "L", "cut_x": config.L_CUT_FRACTION, "cut_y": config.L_CUT_FRACTION}}
+            if getattr(config, "DOMAIN", "rect") == "L"
+            else {}
+        ),
     }
 
 
@@ -273,15 +279,21 @@ def evaluate_case_grid(pinn, device: torch.device, case: ThreeLayerCase, ne_x: i
     pred_start = time.perf_counter()
     u_pred = predict_displacement(pinn, device, pts).reshape(u_fem.shape)
     pinn_eval_seconds = time.perf_counter() - pred_start
-    top_pred = u_pred[:, :, -1, 2]
-    top_ref = u_fem[:, :, -1, 2]
+    # Score only nodes that belong to the domain (all nodes for a rectangle); the
+    # removed corner of an L-shape holds zeros that must not dilute the metrics.
+    active = fem_solver.active_node_mask(fem_cfg(case, ne_x, ne_y, ne_z))
+    vol = np.broadcast_to(active[:, :, None], u_fem.shape[:3])
+    u_pred_all, u_fem_all = u_pred, u_fem
+    u_pred, u_fem = u_pred_all[vol], u_fem_all[vol]
+    top_pred = u_pred_all[:, :, -1, 2][active]
+    top_ref = u_fem_all[:, :, -1, 2][active]
     return {
         "case": case,
         "x_nodes": x_nodes,
         "y_nodes": y_nodes,
         "z_nodes": z_nodes,
-        "u_fem": u_fem,
-        "u_pinn": u_pred,
+        "u_fem": u_fem_all,
+        "u_pinn": u_pred_all,
         "fem_seconds": fem_seconds,
         "pinn_eval_seconds": pinn_eval_seconds,
         "volume_mae_pct": mae_pct(u_pred, u_fem),
@@ -295,7 +307,7 @@ def evaluate_case_grid(pinn, device: torch.device, case: ThreeLayerCase, ne_x: i
         "peak_fem_uz": float(np.min(top_ref)),
         "peak_pinn_uz": float(np.min(top_pred)),
         **average_displacement_metrics(u_pred, u_fem),
-        "n_eval_points": int(u_fem.shape[0] * u_fem.shape[1] * u_fem.shape[2]),
+        "n_eval_points": int(vol.sum()),
     }
 
 

@@ -117,6 +117,47 @@ def adapt_legacy_state_dict(state_dict, target_state_dict, remap_same_shape=Fals
     return adapted
 
 
+def _axis_mask(u, lo_clamped, hi_clamped):
+    """Mask factor along one axis, u in [0,1]; 1 at the center for two clamped edges."""
+    if lo_clamped and hi_clamped:
+        return 4.0 * u * (1.0 - u)
+    if lo_clamped:
+        return u
+    if hi_clamped:
+        return 1.0 - u
+    return torch.ones_like(u)
+
+
+def hard_bc_mask(x):
+    """Multiplicative mask zeroing displacement on clamped edges only.
+
+    With every edge clamped (Case A) this is exactly 16 x(1-x) y(1-y) on the
+    unit square. Simply supported and free edges are left to the soft losses.
+    """
+    if getattr(config, "DOMAIN", "rect") == "L":
+        import domain
+        return domain.hard_mask(x[:, 0:1], x[:, 1:2])
+    edges = getattr(config, "EDGE_BCS", {})
+    clamped = lambda e: edges.get(e, "clamped") == "clamped"
+    u = x[:, 0:1] / float(config.Lx)
+    v = x[:, 1:2] / float(config.Ly)
+    mask = _axis_mask(u, clamped("x0"), clamped("x1")) * _axis_mask(v, clamped("y0"), clamped("y1"))
+    if not (getattr(config, "S_HARD_MASK", False) and any(e == "simply_supported" for e in edges.values())):
+        return mask
+    # Hard-enforce uz=0 on each simply-supported bottom line via a uz-only mask.
+    t_total = torch.clamp(x[:, 4:5] + x[:, 6:7] + x[:, 8:9], min=1e-6)
+    near_bottom = 1.0 - x[:, 2:3] / t_total  # 1 at z=0, 0 at the top surface
+    ell = float(config.S_HARD_LENGTH)
+    dist = {"x0": x[:, 0:1], "x1": float(config.Lx) - x[:, 0:1],
+            "y0": x[:, 1:2], "y1": float(config.Ly) - x[:, 1:2]}
+    uz_mask = torch.ones_like(u)
+    for edge, kind in edges.items():
+        if kind == "simply_supported":
+            uz_mask = uz_mask * (1.0 - near_bottom * torch.exp(-torch.clamp(dist[edge], min=0.0) / ell))
+    # Built with cat (no in-place writes) so second-order autograd through the PDE loss works.
+    return torch.cat([mask, mask, mask * uz_mask], dim=1)
+
+
 class LayerNet(nn.Module):
     def __init__(self, hidden_layers=2, hidden_units=32, activation=nn.Tanh()):
         super().__init__()
@@ -216,8 +257,8 @@ class LayerNet(nn.Module):
         
         x_scaled = torch.cat(
             [
-                x_coord,
-                y_coord,
+                x_coord / float(config.Lx),
+                y_coord / float(config.Ly),
                 z_hat,
                 e1_norm,
                 t1_norm,
@@ -235,10 +276,7 @@ class LayerNet(nn.Module):
         u_raw = self.net(x_scaled)
         
         if config.USE_HARD_SIDE_BC:
-            x_c = x[:, 0:1]
-            y_c = x[:, 1:2]
-            mask = x_c * (1.0 - x_c) * y_c * (1.0 - y_c) * 16.0
-            u_raw = u_raw * mask
+            u_raw = u_raw * hard_bc_mask(x)
         
         return u_raw
 

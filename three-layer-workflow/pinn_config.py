@@ -85,6 +85,11 @@ HARD_BC_EPOCHS = 1000
 LOAD_PATCH_X = [Lx/3, 2*Lx/3]  # [0.333, 0.667]
 LOAD_PATCH_Y = [Ly/3, 2*Ly/3]  # [0.333, 0.667]
 
+# Per-edge side-face BCs: x0 (x=0), x1 (x=Lx), y0 (y=0), y1 (y=Ly).
+# Types: "clamped" | "simply_supported" | "free". Empty dict = all clamped (Case A).
+# Env override example: PINN_EDGE_BCS="x1=simply_supported,y1=simply_supported"
+EDGE_BCS = {}
+
 # --- Network Architecture ---
 LAYERS = 4
 NEURONS = 64
@@ -154,6 +159,8 @@ def _env_float_list(name: str, default):
 DISPLACEMENT_COMPLIANCE_SCALE = _env_float("PINN_DISPLACEMENT_COMPLIANCE_SCALE", DISPLACEMENT_COMPLIANCE_SCALE)
 THICKNESS_COMPLIANCE_ALPHA = _env_float("PINN_THICKNESS_COMPLIANCE_ALPHA", THICKNESS_COMPLIANCE_ALPHA)
 E_COMPLIANCE_POWER = _env_float("PINN_E_COMPLIANCE_POWER", E_COMPLIANCE_POWER)
+NEURONS = _env_int("PINN_NEURONS", NEURONS)
+LAYERS = _env_int("PINN_LAYERS", LAYERS)
 
 for _k, _env in [
     ("pde", "PINN_W_PDE"),
@@ -165,6 +172,47 @@ for _k, _env in [
     if _env in os.environ:
         WEIGHTS[_k] = _env_float(_env, float(WEIGHTS.get(_k, 0.0)))
 
+# Loss weights for simply-supported edges (relative to the other side-BC terms).
+#   S_LINE_WEIGHT:     uz=0 on the supported bottom line, averaged over its OWN points
+#                      (not diluted by clamped-edge samples).
+#   S_TRACTION_WEIGHT: multiplier on the traction-free loss for S/free faces.
+S_LINE_WEIGHT = _env_float("PINN_S_LINE_WEIGHT", 1.0)
+S_TRACTION_WEIGHT = _env_float("PINN_S_TRACTION_WEIGHT", 1.0)
+# Share of each S edge's side samples placed on the supported line (z=0).
+S_LINE_FRACTION = _env_float("PINN_S_LINE_FRACTION", 0.25)
+# Hard-enforce the simply-supported line (uz=0 on the bottom edge line) with a mask on uz:
+#   m = 1 - (1 - z/T) * exp(-d/ell),  d = distance to the S edge, T = total thickness.
+# m=0 on the supported line, ->1 away from it. Only active while the hard mask is on.
+S_HARD_MASK = _env_flag("PINN_S_HARD_MASK", False)
+S_HARD_LENGTH = _env_float("PINN_S_HARD_LENGTH", 0.15)
+
+_edge_env = os.getenv("PINN_EDGE_BCS")
+if _edge_env:
+    EDGE_BCS = dict(item.strip().split("=", 1) for item in _edge_env.split(",") if item.strip())
+
+# Case geometry/loading overrides (Case B etc.) without editing this file.
+#   PINN_LX / PINN_LY: plate dimensions
+#   PINN_PATCH_X_FRAC / PINN_PATCH_Y_FRAC: "lo,hi" patch bounds as fractions of Lx / Ly
+Lx = _env_float("PINN_LX", Lx)
+Ly = _env_float("PINN_LY", Ly)
+_px = _env_float_list("PINN_PATCH_X_FRAC", None)
+_py = _env_float_list("PINN_PATCH_Y_FRAC", None)
+if _px is not None and len(_px) == 2:
+    LOAD_PATCH_X = [_px[0] * Lx, _px[1] * Lx]
+elif "PINN_LX" in os.environ:
+    LOAD_PATCH_X = [Lx / 3, 2 * Lx / 3]
+if _py is not None and len(_py) == 2:
+    LOAD_PATCH_Y = [_py[0] * Ly, _py[1] * Ly]
+elif "PINN_LY" in os.environ:
+    LOAD_PATCH_Y = [Ly / 3, 2 * Ly / 3]
+
+# In-plane domain: "rect" (default) or "L" (rectangle minus its top-right corner
+# x > cut*Lx and y > cut*Ly; all outer faces clamped). See domain.py.
+DOMAIN = os.getenv("PINN_DOMAIN", "rect").strip()
+if DOMAIN not in ("rect", "L"):
+    raise ValueError(f"PINN_DOMAIN must be 'rect' or 'L', got {DOMAIN!r}")
+L_CUT_FRACTION = _env_float("PINN_L_CUT_FRACTION", 0.5)
+
 # PDE decomposition toggle (balances stiff/soft layers during training).
 PDE_DECOMPOSE_BY_LAYER = _env_flag("PINN_PDE_DECOMPOSE_BY_LAYER", True)
 
@@ -175,6 +223,11 @@ PDE_WEIGHT_START = WEIGHTS['pde']
 ENERGY_WEIGHT_START = WEIGHTS['energy']
 # Force soft side boundary conditions from the beginning.
 FORCE_SOFT_SIDE_BC_FROM_START = True
+# Env overrides: train WITH the hard mask (PINN_FORCE_SOFT_SIDE_BC=0) for HARD_BC_EPOCHS epochs.
+FORCE_SOFT_SIDE_BC_FROM_START = _env_flag("PINN_FORCE_SOFT_SIDE_BC", FORCE_SOFT_SIDE_BC_FROM_START)
+HARD_BC_EPOCHS = _env_int("PINN_HARD_BC_EPOCHS", HARD_BC_EPOCHS)
+# Keep the hard mask on during the L-BFGS stage (default off = original behaviour).
+LBFGS_KEEP_HARD_BC = _env_flag("PINN_LBFGS_KEEP_HARD_BC", False)
 SOFT_MODE_PDE_WEIGHT_SCALE = 3.0
 SOFT_MODE_LOAD_WEIGHT_SCALE = 1.0
 # Sampling

@@ -264,6 +264,7 @@ def _run_fem(e1: float, e2: float, e3: float, t1: float, t2: float, t3: float, n
             "y_start": float(config.LOAD_PATCH_Y[0]) / float(config.Ly),
             "y_end": float(config.LOAD_PATCH_Y[1]) / float(config.Ly),
         },
+        "boundary": dict(getattr(config, "EDGE_BCS", {})),
     }
     return fem_solver.solve_three_layer_fem(cfg)
 

@@ -6,6 +6,20 @@ import os
 import json
 import hashlib
 import pinn_config as config
+import domain
+
+
+
+def _active_flat_indices(cfg, nx, ny, nz):
+    """Flat node indices (i*ny*nz + j*nz + k) belonging to the FEM domain.
+    All nodes for a rectangle; excludes removed-region nodes for an L-shape."""
+    if not cfg.get("domain"):
+        return np.arange(nx * ny * nz, dtype=int)
+    import fem_solver
+    act = fem_solver.active_node_mask(cfg)  # (nx, ny)
+    ii, jj, kk = np.meshgrid(np.arange(nx), np.arange(ny), np.arange(nz), indexing="ij")
+    flat = (ii * (ny * nz) + jj * nz + kk).astype(int)
+    return flat[act[ii, jj]].ravel()
 
 
 def _get_e_range():
@@ -177,6 +191,10 @@ def load_fem_supervision_data(
             "nu": float(getattr(config, "nu_vals", [0.3])[0]),
             "version": 1,
         }
+        if getattr(config, "EDGE_BCS", {}):
+            meta["edge_bcs"] = dict(config.EDGE_BCS)
+        if config.DOMAIN != "rect":
+            meta["domain"] = {"type": config.DOMAIN, "cut": float(config.L_CUT_FRACTION)}
         cache_key = hashlib.sha256(json.dumps(meta, sort_keys=True).encode("utf-8")).hexdigest()[:16]
         cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "supervision_cache")
         cache_path = os.path.join(cache_dir, f"random_fem_supervision_{cache_key}.pt")
@@ -223,6 +241,8 @@ def load_fem_supervision_data(
                     "y_start": config.LOAD_PATCH_Y[0] / config.Ly,
                     "y_end": config.LOAD_PATCH_Y[1] / config.Ly,
                 },
+                "boundary": dict(getattr(config, "EDGE_BCS", {})),
+                **({"domain": {"type": "L", "cut_x": config.L_CUT_FRACTION, "cut_y": config.L_CUT_FRACTION}} if config.DOMAIN == "L" else {}),
             }
             x_nodes, y_nodes, z_nodes, u_grid = fem_solver.solve_three_layer_fem(cfg)
 
@@ -233,12 +253,14 @@ def load_fem_supervision_data(
             u_flat = u_grid.reshape(-1, 3)
 
             nx, ny, nz = len(x_nodes), len(y_nodes), len(z_nodes)
-            total_points = int(nx * ny * nz)
+            active_idx = _active_flat_indices(cfg, nx, ny, nz)
+            total_points = int(len(active_idx))
             n_pick = int(min(n_pick_target, total_points))
 
             def _pool_for_k(k_idx: int) -> np.ndarray:
                 ii, jj = np.meshgrid(np.arange(nx), np.arange(ny), indexing="ij")
-                return (ii.ravel() * (ny * nz) + jj.ravel() * nz + int(k_idx)).astype(int)
+                pool = (ii.ravel() * (ny * nz) + jj.ravel() * nz + int(k_idx)).astype(int)
+                return pool if len(active_idx) == nx * ny * nz else np.intersect1d(pool, active_idx)
 
             k_top = nz - 1
             k_if1 = int(np.argmin(np.abs(np.array(z_nodes, dtype=float) - float(t1))))
@@ -270,7 +292,7 @@ def load_fem_supervision_data(
 
             picked = np.unique(np.array(picked, dtype=int))
             if picked.size < n_pick:
-                remaining = np.setdiff1d(np.arange(total_points, dtype=int), picked, assume_unique=False)
+                remaining = np.setdiff1d(active_idx, picked, assume_unique=False)
                 if remaining.size > 0:
                     extra_count = min(max(n_rest, n_pick - picked.size), remaining.size)
                     extra = rng.choice(remaining, size=extra_count, replace=False)
@@ -452,6 +474,10 @@ def load_fem_supervision_data(
         "load_profile": "smooth_quartic_patch_face_quadrature",
         "version": 7,
     }
+    if getattr(config, "EDGE_BCS", {}):
+        meta["edge_bcs"] = dict(config.EDGE_BCS)
+    if config.DOMAIN != "rect":
+        meta["domain"] = {"type": config.DOMAIN, "cut": float(config.L_CUT_FRACTION)}
     cache_key = hashlib.sha256(json.dumps(meta, sort_keys=True).encode("utf-8")).hexdigest()[:16]
     cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "supervision_cache")
     cache_path = os.path.join(cache_dir, f"fem_supervision_{cache_key}.pt")
@@ -500,6 +526,8 @@ def load_fem_supervision_data(
                                     "y_start": config.LOAD_PATCH_Y[0] / config.Ly,
                                     "y_end": config.LOAD_PATCH_Y[1] / config.Ly,
                                 },
+                                "boundary": dict(getattr(config, "EDGE_BCS", {})),
+                                **({"domain": {"type": "L", "cut_x": config.L_CUT_FRACTION, "cut_y": config.L_CUT_FRACTION}} if config.DOMAIN == "L" else {}),
                             }
                             x_nodes, y_nodes, z_nodes, u_grid = fem_solver.solve_three_layer_fem(cfg)
 
@@ -510,7 +538,8 @@ def load_fem_supervision_data(
                             u_flat = u_grid.reshape(-1, 3)
 
                             nx, ny, nz = len(x_nodes), len(y_nodes), len(z_nodes)
-                            total_points = int(nx * ny * nz)
+                            active_idx = _active_flat_indices(cfg, nx, ny, nz)
+                            total_points = int(len(active_idx))
                             if case_counts is not None:
                                 n_pick = int(case_counts.get((it1, it2, it3, iE1, iE2, iE3), 0))
                             else:
@@ -519,7 +548,8 @@ def load_fem_supervision_data(
 
                             def _pool_for_k(k_idx: int) -> np.ndarray:
                                 ii, jj = np.meshgrid(np.arange(nx), np.arange(ny), indexing="ij")
-                                return (ii.ravel() * (ny * nz) + jj.ravel() * nz + int(k_idx)).astype(int)
+                                pool = (ii.ravel() * (ny * nz) + jj.ravel() * nz + int(k_idx)).astype(int)
+                                return pool if len(active_idx) == nx * ny * nz else np.intersect1d(pool, active_idx)
 
                             k_top = nz - 1
                             k_if1 = int(np.argmin(np.abs(np.array(z_nodes, dtype=float) - float(t1))))
@@ -557,13 +587,13 @@ def load_fem_supervision_data(
 
                             picked = np.unique(np.array(picked, dtype=int))
                             if picked.size < n_pick:
-                                remaining = np.setdiff1d(np.arange(total_points, dtype=int), picked, assume_unique=False)
+                                remaining = np.setdiff1d(active_idx, picked, assume_unique=False)
                                 if remaining.size > 0:
                                     extra = rng.choice(remaining, size=min(n_rest, remaining.size), replace=False)
                                     picked = np.unique(np.concatenate([picked, extra], axis=0))
 
                             if picked.size < n_pick:
-                                remaining = np.setdiff1d(np.arange(total_points, dtype=int), picked, assume_unique=False)
+                                remaining = np.setdiff1d(active_idx, picked, assume_unique=False)
                                 if remaining.size > 0:
                                     extra = rng.choice(remaining, size=min(n_pick - picked.size, remaining.size), replace=False)
                                     picked = np.unique(np.concatenate([picked, extra], axis=0))
@@ -612,8 +642,7 @@ def load_fem_supervision_data(
 
 
 def sample_domain(n, z_min, z_max):
-    x = torch.rand(n, 1) * config.Lx
-    y = torch.rand(n, 1) * config.Ly
+    x, y = domain.sample_xy(n)
     e1, e2, e3, t1, t2, t3, restitution, friction, impact_velocity = _sample_param_columns(n)
     t_total = t1 + t2 + t3
     z = torch.rand(n, 1) * t_total
@@ -727,6 +756,13 @@ def sample_domain_residual_based(n, z_min, z_max, prev_pts, prev_residuals):
 
 def sample_boundaries(n, z_min, z_max):
     n_face = n // 4
+    if domain.is_l_shape():
+        # Outer boundary of the L (six faces), all clamped; points spread by edge length.
+        m = 4 * n_face
+        xb, yb = domain.sample_boundary_xy(m)
+        eb1, eb2, eb3, tb1, tb2, tb3, rb, mub, v0b = _sample_param_columns(m)
+        zb = torch.rand(m, 1) * (tb1 + tb2 + tb3)
+        return torch.cat([xb, yb, zb, eb1, tb1, eb2, tb2, eb3, tb3, rb, mub, v0b], dim=1)
     
     y1 = torch.rand(n_face, 1) * config.Ly
     x1 = torch.zeros(n_face, 1)
@@ -752,6 +788,15 @@ def sample_boundaries(n, z_min, z_max):
     z4 = torch.rand(n_face, 1) * (t41 + t42 + t43)
     p4 = torch.cat([x4, y4, z4, e41, t41, e42, t42, e43, t43, r4, mu4, v04], dim=1)
     
+    # Simply supported edges constrain uz only on the bottom edge line (z=0).
+    # A random z never lands exactly on that line, so pin a share of the edge's
+    # points to z=0 (it also keeps traction-free points on the rest of the face).
+    edge_bcs = getattr(config, "EDGE_BCS", {})
+    n_line = max(int(n_face * float(getattr(config, "S_LINE_FRACTION", 0.25))), 1)
+    for edge, pts in (("x0", p1), ("x1", p2), ("y0", p3), ("y1", p4)):
+        if edge_bcs.get(edge) == "simply_supported":
+            pts[:n_line, 2] = 0.0
+
     return torch.cat([p1, p2, p3, p4], dim=0)
 
 
@@ -834,8 +879,8 @@ def sample_boundaries_residual_based(n, z_min, z_max, prev_pts, prev_residuals):
 
 
 def sample_top_load(n):
-    xl = torch.rand(n, 1) * (config.Lx/3) + config.Lx/3
-    yl = torch.rand(n, 1) * (config.Ly/3) + config.Ly/3
+    xl = torch.rand(n, 1) * (config.LOAD_PATCH_X[1] - config.LOAD_PATCH_X[0]) + config.LOAD_PATCH_X[0]
+    yl = torch.rand(n, 1) * (config.LOAD_PATCH_Y[1] - config.LOAD_PATCH_Y[0]) + config.LOAD_PATCH_Y[0]
     bias_frac = float(getattr(config, "PATCH_CENTER_BIAS_FRACTION", 0.0))
     bias_frac = max(0.0, min(bias_frac, 1.0))
     n_bias = int(n * bias_frac)
@@ -844,8 +889,8 @@ def sample_top_load(n):
         alpha = torch.full((n_bias, 1), shape)
         beta = torch.full((n_bias, 1), shape)
         center_dist = torch.distributions.Beta(alpha, beta)
-        xl[:n_bias] = center_dist.sample() * (config.Lx/3) + config.Lx/3
-        yl[:n_bias] = center_dist.sample() * (config.Ly/3) + config.Ly/3
+        xl[:n_bias] = center_dist.sample() * (config.LOAD_PATCH_X[1] - config.LOAD_PATCH_X[0]) + config.LOAD_PATCH_X[0]
+        yl[:n_bias] = center_dist.sample() * (config.LOAD_PATCH_Y[1] - config.LOAD_PATCH_Y[0]) + config.LOAD_PATCH_Y[0]
     e1l, e2l, e3l, t1l, t2l, t3l, rl, mul, v0l = _sample_param_columns(n)
     zl = (t1l + t2l + t3l).clone()
     return torch.cat([xl, yl, zl, e1l, t1l, e2l, t2l, e3l, t3l, rl, mul, v0l], dim=1)
@@ -856,11 +901,10 @@ def sample_top_free(n):
     count = 0
     while count < n:
         batch = 1000
-        x = torch.rand(batch, 1) * config.Lx
-        y = torch.rand(batch, 1) * config.Ly
+        x, y = domain.sample_xy(batch)
         
-        in_patch = (x > config.Lx/3) & (x < 2*config.Lx/3) & \
-                   (y > config.Ly/3) & (y < 2*config.Ly/3)
+        in_patch = (x > config.LOAD_PATCH_X[0]) & (x < config.LOAD_PATCH_X[1]) & \
+                   (y > config.LOAD_PATCH_Y[0]) & (y < config.LOAD_PATCH_Y[1])
         
         mask_free = ~in_patch.squeeze()
         xf, yf = x[mask_free], y[mask_free]
@@ -957,25 +1001,25 @@ def sample_surface_residual_based(n, z_val, prev_pts, prev_residuals, constrain_
     
     if constrain_load_patch:
         if is_load_patch:
-            new_pts[:, 0] = torch.clamp(new_pts[:, 0], config.Lx/3, 2*config.Lx/3)
-            new_pts[:, 1] = torch.clamp(new_pts[:, 1], config.Ly/3, 2*config.Ly/3)
+            new_pts[:, 0] = torch.clamp(new_pts[:, 0], config.LOAD_PATCH_X[0], config.LOAD_PATCH_X[1])
+            new_pts[:, 1] = torch.clamp(new_pts[:, 1], config.LOAD_PATCH_Y[0], config.LOAD_PATCH_Y[1])
         else:
             for i in range(n):
                 x, y = new_pts[i, 0].item(), new_pts[i, 1].item()
-                if config.Lx/3 < x < 2*config.Lx/3 and config.Ly/3 < y < 2*config.Ly/3:
-                    dx_low = x - config.Lx/3
-                    dx_high = 2*config.Lx/3 - x
-                    dy_low = y - config.Ly/3
-                    dy_high = 2*config.Ly/3 - y
+                if config.LOAD_PATCH_X[0] < x < config.LOAD_PATCH_X[1] and config.LOAD_PATCH_Y[0] < y < config.LOAD_PATCH_Y[1]:
+                    dx_low = x - config.LOAD_PATCH_X[0]
+                    dx_high = config.LOAD_PATCH_X[1] - x
+                    dy_low = y - config.LOAD_PATCH_Y[0]
+                    dy_high = config.LOAD_PATCH_Y[1] - y
                     min_dist = min(dx_low, dx_high, dy_low, dy_high)
                     if min_dist == dx_low:
-                        new_pts[i, 0] = config.Lx/3 - 0.01
+                        new_pts[i, 0] = config.LOAD_PATCH_X[0] - 0.01
                     elif min_dist == dx_high:
-                        new_pts[i, 0] = 2*config.Lx/3 + 0.01
+                        new_pts[i, 0] = config.LOAD_PATCH_X[1] + 0.01
                     elif min_dist == dy_low:
-                        new_pts[i, 1] = config.Ly/3 - 0.01
+                        new_pts[i, 1] = config.LOAD_PATCH_Y[0] - 0.01
                     else:
-                        new_pts[i, 1] = 2*config.Ly/3 + 0.01
+                        new_pts[i, 1] = config.LOAD_PATCH_Y[1] + 0.01
                     new_pts[i, 0] = torch.clamp(new_pts[i, 0], torch.tensor(0.0), torch.tensor(config.Lx))
                     new_pts[i, 1] = torch.clamp(new_pts[i, 1], torch.tensor(0.0), torch.tensor(config.Ly))
     
@@ -993,8 +1037,7 @@ def sample_top(n):
 
 
 def sample_interface(n, z_val):
-    x = torch.rand(n, 1) * config.Lx
-    y = torch.rand(n, 1) * config.Ly
+    x, y = domain.sample_xy(n)
     e1, e2, e3, t1, t2, t3, r, mu, v0 = _sample_param_columns(n)
     t_total = t1 + t2 + t3
 
@@ -1014,8 +1057,7 @@ def sample_interface(n, z_val):
 def sample_interface_band(n, z_center, band, z_min=None, z_max=None):
     if z_min is None:
         z_min = 0.0
-    x = torch.rand(n, 1) * config.Lx
-    y = torch.rand(n, 1) * config.Ly
+    x, y = domain.sample_xy(n)
     e1, e2, e3, t1, t2, t3, r, mu, v0 = _sample_param_columns(n)
     t_total = t1 + t2 + t3
 
@@ -1032,8 +1074,7 @@ def sample_interface_band(n, z_center, band, z_min=None, z_max=None):
 
 
 def sample_bottom(n):
-    x_bot = torch.rand(n, 1) * config.Lx
-    y_bot = torch.rand(n, 1) * config.Ly
+    x_bot, y_bot = domain.sample_xy(n)
     z_bot = torch.zeros(n, 1)
     e1_bot, e2_bot, e3_bot, t1_bot, t2_bot, t3_bot, r_bot, mu_bot, v0_bot = _sample_param_columns(n)
     return torch.cat([x_bot, y_bot, z_bot, e1_bot, t1_bot, e2_bot, t2_bot, e3_bot, t3_bot, r_bot, mu_bot, v0_bot], dim=1)
@@ -1046,6 +1087,9 @@ def get_data(prev_data=None, residuals=None):
     z_min, z_max = 0.0, float(t1_max + t2_max + t3_max)
     
     use_residual = (prev_data is not None and residuals is not None)
+    if use_residual and domain.is_l_shape():
+        raise NotImplementedError("Residual-based resampling is not implemented for the L-shaped domain "
+                                  "(set PINN_ADAPTIVE_RESAMPLE_EVERY=0).")
     
     interface_frac = float(getattr(config, "INTERFACE_SAMPLE_FRACTION", 0.0))
     interface_band = float(getattr(config, "INTERFACE_BAND", 0.0))

@@ -296,8 +296,9 @@ def train():
     
     # L-BFGS Fine-Tuning
     print("Starting L-BFGS Fine-Tuning...")
-    config.USE_HARD_SIDE_BC = False
-    pinn.set_hard_bc(False)
+    if not getattr(config, "LBFGS_KEEP_HARD_BC", False):
+        config.USE_HARD_SIDE_BC = False
+        pinn.set_hard_bc(False)
     optimizer_lbfgs = optim.LBFGS(
         pinn.parameters(),
         lr=1.0,

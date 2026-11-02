@@ -3,6 +3,93 @@ import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
+EDGE_NAMES = ("x0", "x1", "y0", "y1")
+_BC_FIXED_COMPONENTS = {
+    "clamped": (0, 1, 2),
+    # Classical-analogue simple support for a 3D solid: uz=0 along the bottom
+    # edge line only (z=0); the rest of the face is traction-free, so the cross
+    # section can rotate (w=0, M_n~0 in plate terms).
+    "simply_supported": (2,),
+    # uz=0 over the whole side face (in-plane motion free); stiffer than a hinge.
+    "roller_face": (2,),
+    "free": (),
+    # Symmetry planes for reduced models: normal displacement fixed, rest free.
+    "sym_ux": (0,),
+    "sym_uy": (1,),
+}
+# Edge types that constrain only the bottom edge line (k == 0).
+_BOTTOM_LINE_ONLY = {"simply_supported"}
+
+
+def resolve_edge_bcs(cfg):
+    """Return {edge: bc_type} with clamped as the default for every edge."""
+    given = cfg.get("boundary", {}) or {}
+    unknown = set(given) - set(EDGE_NAMES)
+    if unknown:
+        raise ValueError(f"Unknown boundary edges: {sorted(unknown)}")
+    out = {}
+    for edge in EDGE_NAMES:
+        kind = given.get(edge, "clamped")
+        if kind not in _BC_FIXED_COMPONENTS:
+            raise ValueError(f"Unknown BC type {kind!r} on edge {edge}")
+        out[edge] = kind
+    return out
+
+
+def active_element_mask(cfg):
+    """Boolean (ne_y, ne_x) mask of elements kept in the model.
+
+    cfg["domain"] = {"type": "L", "cut_x": 0.5, "cut_y": 0.5} removes the corner
+    region x > cut_x*Lx and y > cut_y*Ly (an L-shaped plate). Without "domain"
+    every element is active (rectangle). Cut lines must lie on mesh lines.
+    """
+    g = cfg["geometry"]
+    ne_x, ne_y = int(g.get("ne_x", 30)), int(g.get("ne_y", 30))
+    dom = cfg.get("domain")
+    active = np.ones((ne_y, ne_x), dtype=bool)
+    if not dom:
+        return active
+    if dom.get("type") != "L":
+        raise ValueError(f"Unknown domain type {dom.get('type')!r}")
+    for frac, n in ((dom["cut_x"], ne_x), (dom["cut_y"], ne_y)):
+        if abs(frac * n - round(frac * n)) > 1e-9:
+            raise ValueError("L-domain cut must lie on a mesh line (cut * ne must be an integer)")
+    cx, cy = int(round(dom["cut_x"] * ne_x)), int(round(dom["cut_y"] * ne_y))
+    active[cy:, cx:] = False
+    return active
+
+
+def active_node_mask(cfg):
+    """Boolean (nx, ny) mask of nodes that belong to at least one active element."""
+    act = active_element_mask(cfg)
+    ne_y, ne_x = act.shape
+    nodes = np.zeros((ne_x + 1, ne_y + 1), dtype=bool)
+    for dj in (0, 1):
+        for di in (0, 1):
+            nodes[di:di + ne_x, dj:dj + ne_y] |= act.T
+    return nodes
+
+
+def _domain_boundary_columns(cfg):
+    """Set of (i, j) node columns lying on the boundary of the active domain."""
+    act = active_element_mask(cfg)
+    ne_y, ne_x = act.shape
+    cols = set()
+    for j in range(ne_y):
+        for i in range(ne_x):
+            if not act[j, i]:
+                continue
+            for di, dj, nodes in (
+                (-1, 0, ((i, j), (i, j + 1))),
+                (1, 0, ((i + 1, j), (i + 1, j + 1))),
+                (0, -1, ((i, j), (i + 1, j))),
+                (0, 1, ((i, j + 1), (i + 1, j + 1))),
+            ):
+                ni, nj = i + di, j + dj
+                if ni < 0 or nj < 0 or ni >= ne_x or nj >= ne_y or not act[nj, ni]:
+                    cols.update(nodes)
+    return cols
+
 
 def _layer_ids_from_z_centers(z_centers, t_layers):
     """Assign each element to the layer containing its centroid.
@@ -78,6 +165,11 @@ def _assemble_and_solve(cfg, ke_per_element):
     print("Assembling...")
     el_indices = np.arange(ne_x * ne_y * ne_z)
     ek, ej, ei = np.unravel_index(el_indices, (ne_z, ne_y, ne_x))
+    active_el = active_element_mask(cfg)
+    keep = active_el[ej, ei]
+    if not keep.all():
+        ek, ej, ei = ek[keep], ej[keep], ei[keep]
+        ke_per_element = ke_per_element[keep]
 
     n0 = (ei) + (ej) * nx + (ek) * nx * ny
     n1 = (ei + 1) + (ej) * nx + (ek) * nx * ny
@@ -128,6 +220,8 @@ def _assemble_and_solve(cfg, ke_per_element):
     top_k = nz - 1
     for elem_j in range(ne_y):
         for elem_i in range(ne_x):
+            if not active_el[elem_j, elem_i]:
+                continue
             face_nodes = [
                 elem_i + elem_j * nx + top_k * nx * ny,
                 (elem_i + 1) + elem_j * nx + top_k * nx * ny,
@@ -152,20 +246,48 @@ def _assemble_and_solve(cfg, ke_per_element):
                     for node_id, n_val in zip(face_nodes, shape):
                         F[3 * node_id + 2] += traction_z * n_val * face_det_j
 
+    # Per-edge side-face boundary conditions. cfg["boundary"] maps edge name to
+    # a type; missing keys (or a missing "boundary" entry) default to clamped,
+    # which reproduces the original all-clamped benchmark (Case A).
+    #   x0: x=0, x1: x=Lx, y0: y=0, y1: y=Ly
+    #   clamped          -> ux=uy=uz=0 on the whole side face
+    #   simply_supported -> uz=0 on the bottom edge line only (classical analogue)
+    #   roller_face      -> uz=0 on the whole side face (in-plane motion free)
+    #   free             -> no constraint (natural traction-free)
+    bc = resolve_edge_bcs(cfg)
+    if cfg.get("domain"):
+        # Non-rectangular domain: clamp every node column on the outer boundary
+        # (including re-entrant faces) and fix nodes not in any active element.
+        if cfg.get("boundary"):
+            raise ValueError("per-edge 'boundary' is not supported together with 'domain' (all outer faces are clamped)")
+        bc = {e: "free" for e in EDGE_NAMES}
+    edge_nodes = {
+        "x0": [(0 + j * nx + k * nx * ny, k) for j in range(ny) for k in range(nz)],
+        "x1": [((nx - 1) + j * nx + k * nx * ny, k) for j in range(ny) for k in range(nz)],
+        "y0": [(i + 0 * nx + k * nx * ny, k) for i in range(nx) for k in range(nz)],
+        "y1": [(i + (ny - 1) * nx + k * nx * ny, k) for i in range(nx) for k in range(nz)],
+    }
     fixed_dofs = []
-    for j in range(ny):
-        for k in range(nz):
-            n_start = 0 + j * nx + k * nx * ny
-            n_end = (nx - 1) + j * nx + k * nx * ny
-            fixed_dofs.extend([3 * n_start, 3 * n_start + 1, 3 * n_start + 2])
-            fixed_dofs.extend([3 * n_end, 3 * n_end + 1, 3 * n_end + 2])
+    for edge, nodes in edge_nodes.items():
+        kind = bc[edge]
+        comps = _BC_FIXED_COMPONENTS[kind]
+        for n_id, k_level in nodes:
+            if kind in _BOTTOM_LINE_ONLY and k_level != 0:
+                continue
+            fixed_dofs.extend(3 * n_id + c for c in comps)
 
-    for i in range(nx):
-        for k in range(nz):
-            n_start = i + 0 * nx + k * nx * ny
-            n_end = i + (ny - 1) * nx + k * nx * ny
-            fixed_dofs.extend([3 * n_start, 3 * n_start + 1, 3 * n_start + 2])
-            fixed_dofs.extend([3 * n_end, 3 * n_end + 1, 3 * n_end + 2])
+    if cfg.get("domain"):
+        node_active = active_node_mask(cfg)
+        boundary_cols = _domain_boundary_columns(cfg)
+        for j in range(ny):
+            for i in range(nx):
+                if (not node_active[i, j]) or ((i, j) in boundary_cols):
+                    for k in range(nz):
+                        n_id = i + j * nx + k * nx * ny
+                        fixed_dofs.extend([3 * n_id, 3 * n_id + 1, 3 * n_id + 2])
+
+    if len(fixed_dofs) == 0:
+        raise ValueError("All edges are free: rigid-body modes are unconstrained.")
 
     fixed_dofs = np.unique(fixed_dofs)
 
@@ -176,7 +298,10 @@ def _assemble_and_solve(cfg, ke_per_element):
     ).tocsr()
 
     print("Solving...")
-    u = spla.spsolve(K, F)
+    if cfg.get("diagonal_symmetry"):
+        u = _solve_diagonal_reduced(K, F, nx, ny, nz)
+    else:
+        u = spla.spsolve(K, F)
 
     u_grid = np.zeros((nx, ny, nz, 3))
     for k in range(nz):
@@ -186,6 +311,43 @@ def _assemble_and_solve(cfg, ke_per_element):
                 u_grid[i, j, k] = u[3 * idx : 3 * idx + 3]
 
     return x_nodes, y_nodes, np.linspace(0, H, nz), u_grid
+
+
+def _solve_diagonal_reduced(K, F, nx, ny, nz):
+    """Solve exploiting diagonal (x<->y) symmetry of a square quarter model.
+
+    The solution is invariant under swapping x and y: u_x(i,j,k)=u_y(j,i,k),
+    u_z(i,j,k)=u_z(j,i,k). With P mapping reduced DOFs (nodes i>=j) to the full
+    vector, solve (P^T K P) u_r = P^T F, so the linear system has about half the
+    unknowns of the quarter model (about 1/8 of the full plate).
+    """
+    if nx != ny:
+        raise ValueError("diagonal_symmetry requires a square (nx == ny) model")
+    node = lambda i, j, k: i + j * nx + k * nx * ny
+    red_index = {}
+    for k in range(nz):
+        for j in range(ny):
+            for i in range(j, nx):
+                red_index[(i, j, k)] = len(red_index)
+    n_full = nx * ny * nz * 3
+    rows, cols = [], []
+    for k in range(nz):
+        for j in range(ny):
+            for i in range(nx):
+                n = node(i, j, k)
+                if i >= j:
+                    r = red_index[(i, j, k)]
+                    comps = ((0, 0), (1, 1), (2, 2))
+                else:
+                    r = red_index[(j, i, k)]
+                    comps = ((0, 1), (1, 0), (2, 2))  # (full component, reduced component)
+                for fc, rc in comps:
+                    rows.append(3 * n + fc)
+                    cols.append(3 * r + rc)
+    P = sp.coo_matrix((np.ones(len(rows)), (rows, cols)), shape=(n_full, 3 * len(red_index))).tocsr()
+    Kr = (P.T @ K @ P).tocsr()
+    Fr = P.T @ F
+    return P @ spla.spsolve(Kr, Fr)
 
 
 def solve_fem(cfg):

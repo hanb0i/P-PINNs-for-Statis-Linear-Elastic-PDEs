@@ -126,6 +126,122 @@ def divergence(sigma, x):
         
     return div
 
+# Displacement components constrained on each edge type (0=ux, 1=uy, 2=uz).
+#   clamped          : u=0 on the whole side face
+#   simply_supported : uz=0 on the bottom edge line (z=0) only; the rest of the
+#                      face is traction-free (classical analogue, see fem_solver)
+#   roller_face      : uz=0 on the whole side face (in-plane motion free)
+#   free             : traction-free
+_EDGE_FIXED_COMPONENTS = {
+    "clamped": (0, 1, 2),
+    "simply_supported": (2,),
+    "roller_face": (2,),
+    "free": (),
+}
+_BOTTOM_LINE_ONLY = {"simply_supported"}
+# Edge types whose face is traction-free where displacement is not constrained.
+_TRACTION_FREE_TYPES = {"free", "simply_supported"}
+# Outward normal (nx, ny) for each edge.
+_EDGE_NORMALS = {"x0": (-1.0, 0.0), "x1": (1.0, 0.0), "y0": (0.0, -1.0), "y1": (0.0, 1.0)}
+_Z_LINE_TOL = 1e-8
+
+
+def _edge_bc_type(edge):
+    kind = getattr(config, "EDGE_BCS", {}).get(edge, "clamped")
+    if kind not in _EDGE_FIXED_COMPONENTS:
+        raise ValueError(f"Unknown BC type {kind!r} on edge {edge}")
+    return kind
+
+
+def _edge_masks(x_side):
+    """Boolean (N,) membership of each side point on each edge."""
+    tol_x = 1e-6 * float(config.Lx)
+    tol_y = 1e-6 * float(config.Ly)
+    return {
+        "x0": x_side[:, 0] <= tol_x,
+        "x1": x_side[:, 0] >= float(config.Lx) - tol_x,
+        "y0": x_side[:, 1] <= tol_y,
+        "y1": x_side[:, 1] >= float(config.Ly) - tol_y,
+    }
+
+
+def _non_rect():
+    return getattr(config, "DOMAIN", "rect") != "rect"
+
+
+def side_constraint_weights(x_side, include_line_edges=True):
+    """(N,3) 0/1 weights marking displacement components constrained at each
+    side point. Corner points take the union of the constraints of their edges.
+    include_line_edges=False leaves out the simply-supported bottom lines, which
+    are weighted separately (see s_line_loss)."""
+    if _non_rect():  # L-shape etc.: every outer face is fully clamped
+        return torch.ones(x_side.shape[0], 3, device=x_side.device)
+    w = torch.zeros(x_side.shape[0], 3, device=x_side.device)
+    on_bottom = x_side[:, 2] <= _Z_LINE_TOL
+    for edge, m in _edge_masks(x_side).items():
+        kind = _edge_bc_type(edge)
+        if kind in _BOTTOM_LINE_ONLY:
+            if not include_line_edges:
+                continue
+            m = m & on_bottom
+        for c in _EDGE_FIXED_COMPONENTS[kind]:
+            w[m, c] = 1.0
+    return w
+
+
+def s_line_points(x_side):
+    """Mask of side points lying on a simply-supported edge's bottom line."""
+    if _non_rect():
+        return torch.zeros(x_side.shape[0], dtype=torch.bool, device=x_side.device)
+    on_bottom = x_side[:, 2] <= _Z_LINE_TOL
+    m = torch.zeros(x_side.shape[0], dtype=torch.bool, device=x_side.device)
+    for edge, em in _edge_masks(x_side).items():
+        if _edge_bc_type(edge) in _BOTTOM_LINE_ONLY:
+            m |= em & on_bottom
+    return m
+
+
+def free_edge_traction_loss(model, x_side):
+    """Traction-free (sigma.n = 0) loss on traction-free side faces.
+
+    Applies to "free" edges everywhere and to "simply_supported" edges away from
+    the supported bottom line. Points touching a displacement-constrained edge,
+    or lying on two traction-free edges (ambiguous normal), are skipped.
+    Returns (loss, n_points).
+    """
+    if _non_rect():
+        return torch.zeros((), device=x_side.device), 0
+    masks = _edge_masks(x_side)
+    above_line = x_side[:, 2] > _Z_LINE_TOL
+    count = torch.zeros(x_side.shape[0], device=x_side.device)
+    constrained = torch.zeros(x_side.shape[0], dtype=torch.bool, device=x_side.device)
+    n_vec = torch.zeros(x_side.shape[0], 3, device=x_side.device)
+    for edge, m in masks.items():
+        kind = _edge_bc_type(edge)
+        if kind in ("clamped", "roller_face"):
+            constrained |= m
+        if kind in _TRACTION_FREE_TYPES:
+            mt = m & above_line if kind in _BOTTOM_LINE_ONLY else m
+            count += mt.float()
+            nx, ny = _EDGE_NORMALS[edge]
+            n_vec[mt, 0] = nx
+            n_vec[mt, 1] = ny
+        # The supported bottom line of a simply_supported edge is displacement-constrained.
+        if kind in _BOTTOM_LINE_ONLY:
+            constrained |= m & ~above_line
+    free_pts = (count == 1) & ~constrained
+    n_pts = int(free_pts.sum().item())
+    if n_pts == 0:
+        return torch.zeros((), device=x_side.device), 0
+    xf = x_side[free_pts].detach().clone().requires_grad_(True)
+    nf = n_vec[free_pts]
+    v = model(xf, 0)
+    u = v_to_u(v, _global_E_scale(xf), _global_thickness(xf))
+    lm, mu = _lame_from_E(_select_E_local(xf))
+    sig = stress(strain(gradient(u, xf)), lm, mu)
+    T = torch.einsum("bij,bj->bi", sig, nf)
+    return torch.mean(T ** 2), n_pts
+
 def compute_loss(model, data, device, weights=None):
     total_loss = 0
     losses = {}
@@ -200,7 +316,8 @@ def compute_loss(model, data, device, weights=None):
     
     # Internal strain energy (volume integral, approximated by mean * volume)
     energy_density = 0.5 * torch.einsum('bij,bij->b', eps, sig)
-    internal_energy = (energy_density * t_scale.squeeze(1)).mean() * (config.Lx * config.Ly)
+    import domain as _domain
+    internal_energy = (energy_density * t_scale.squeeze(1)).mean() * _domain.area()
     
     # --- 2. Dirichlet BCs (Clamped Sides) ---
     x_side = data['sides'][0].to(device)
@@ -208,7 +325,16 @@ def compute_loss(model, data, device, weights=None):
     t_side = _global_thickness(x_side)
     v_side = model(x_side, 0)
     u_side = v_to_u(v_side, E_side, t_side)
-    bc_loss = torch.mean(u_side**2)
+    # All-clamped (Case A): weights are all ones, so this equals mean(u_side**2).
+    bc_loss = torch.mean(side_constraint_weights(x_side, include_line_edges=False) * u_side**2)
+    # Simply-supported bottom lines: uz^2 averaged over the line's own points so the
+    # constraint is not diluted by the (many) clamped-edge samples.
+    line_pts = s_line_points(x_side)
+    if line_pts.any():
+        bc_loss = bc_loss + float(getattr(config, "S_LINE_WEIGHT", 1.0)) * torch.mean(u_side[line_pts, 2] ** 2)
+    free_edge_loss, n_free_edge = free_edge_traction_loss(model, x_side)
+    if n_free_edge > 0:
+        bc_loss = bc_loss + float(getattr(config, "S_TRACTION_WEIGHT", 1.0)) * free_edge_loss * (n_free_edge / x_side.shape[0])
     losses['bc_sides'] = bc_loss
     total_loss += weights['bc'] * bc_loss
 
@@ -402,7 +528,7 @@ def compute_residuals(model, data, device):
     t_side = _global_thickness(x_side)
     v_side = model(x_side, 0)
     u_side = v_to_u(v_side, E_side, t_side)
-    bc_residual = torch.sqrt(torch.sum(u_side**2, dim=1))
+    bc_residual = torch.sqrt(torch.sum(side_constraint_weights(x_side) * u_side**2, dim=1))
     residuals['sides'] = bc_residual.cpu()
     
     # --- Top Load Residuals ---
